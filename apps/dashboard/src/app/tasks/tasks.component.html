@@ -1,0 +1,286 @@
+<div class="min-h-screen bg-gray-100">
+  <!-- Header -->
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Task Management</h1>
+        @if (currentUser) {
+          <p class="text-sm text-gray-600">{{ currentUser.email }} ({{ currentUser.role }})</p>
+        }
+      </div>
+      <button
+        (click)="logout()"
+        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+      >
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+      <div class="flex flex-wrap gap-4 items-center">
+        <!-- Create Task Button -->
+        <button
+          (click)="openCreateModal()"
+          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          + New Task
+        </button>
+
+        <!-- Filters -->
+        <div class="flex-1 flex flex-wrap gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              [(ngModel)]="filterCategory"
+              (change)="applyFilters()"
+              class="px-3 py-2 border border-gray-300 rounded"
+            >
+              <option value="">All</option>
+              @for (cat of categories; track cat) {
+                <option [value]="cat">{{ cat }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              [(ngModel)]="filterStatus"
+              (change)="applyFilters()"
+              class="px-3 py-2 border border-gray-300 rounded"
+            >
+              <option value="">All</option>
+              @for (status of statuses; track status) {
+                <option [value]="status">{{ getStatusLabel(status) }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+            <select
+              [(ngModel)]="sortBy"
+              (change)="applyFilters()"
+              class="px-3 py-2 border border-gray-300 rounded"
+            >
+              <option value="orderIndex">Order</option>
+              <option value="createdAt">Date Created</option>
+              <option value="title">Title</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- TODO Column -->
+      <div class="bg-gray-50 rounded-lg p-4">
+        <h3 class="font-semibold text-lg mb-4 text-gray-700">To Do ({{ todoTasks.length }})</h3>
+        <div
+          cdkDropList
+          [cdkDropListData]="todoTasks"
+          (cdkDropListDropped)="drop($event, TaskStatus.TODO)"
+          class="min-h-[200px] space-y-3"
+        >
+          @for (task of todoTasks; track task.id) {
+            <div
+              cdkDrag
+              [cdkDragData]="task"
+              class="bg-white p-4 rounded shadow hover:shadow-md cursor-move transition"
+            >
+              <div class="flex justify-between items-start mb-2">
+                <h4 class="font-medium text-gray-900">{{ task.title }}</h4>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                  {{ task.category }}
+                </span>
+              </div>
+              @if (task.description) {
+                <p class="text-sm text-gray-600 mb-3">{{ task.description }}</p>
+              }
+              <div class="flex gap-2">
+                <button
+                  (click)="openEditModal(task)"
+                  class="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Edit
+                </button>
+                <button
+                  (click)="deleteTask(task)"
+                  class="text-xs text-red-600 hover:text-red-800"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- IN PROGRESS Column -->
+      <div class="bg-yellow-50 rounded-lg p-4">
+        <h3 class="font-semibold text-lg mb-4 text-gray-700">In Progress ({{ inProgressTasks.length }})</h3>
+        <div
+          cdkDropList
+          [cdkDropListData]="inProgressTasks"
+          (cdkDropListDropped)="drop($event, TaskStatus.IN_PROGRESS)"
+          class="min-h-[200px] space-y-3"
+        >
+          @for (task of inProgressTasks; track task.id) {
+            <div
+              cdkDrag
+              [cdkDragData]="task"
+              class="bg-white p-4 rounded shadow hover:shadow-md cursor-move transition"
+            >
+              <div class="flex justify-between items-start mb-2">
+                <h4 class="font-medium text-gray-900">{{ task.title }}</h4>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                  {{ task.category }}
+                </span>
+              </div>
+              @if (task.description) {
+                <p class="text-sm text-gray-600 mb-3">{{ task.description }}</p>
+              }
+              <div class="flex gap-2">
+                <button
+                  (click)="openEditModal(task)"
+                  class="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Edit
+                </button>
+                <button
+                  (click)="deleteTask(task)"
+                  class="text-xs text-red-600 hover:text-red-800"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- DONE Column -->
+      <div class="bg-green-50 rounded-lg p-4">
+        <h3 class="font-semibold text-lg mb-4 text-gray-700">Done ({{ doneTasks.length }})</h3>
+        <div
+          cdkDropList
+          [cdkDropListData]="doneTasks"
+          (cdkDropListDropped)="drop($event, TaskStatus.DONE)"
+          class="min-h-[200px] space-y-3"
+        >
+          @for (task of doneTasks; track task.id) {
+            <div
+              cdkDrag
+              [cdkDragData]="task"
+              class="bg-white p-4 rounded shadow hover:shadow-md cursor-move transition"
+            >
+              <div class="flex justify-between items-start mb-2">
+                <h4 class="font-medium text-gray-900">{{ task.title }}</h4>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                  {{ task.category }}
+                </span>
+              </div>
+              @if (task.description) {
+                <p class="text-sm text-gray-600 mb-3">{{ task.description }}</p>
+              }
+              <div class="flex gap-2">
+                <button
+                  (click)="openEditModal(task)"
+                  class="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Edit
+                </button>
+                <button
+                  (click)="deleteTask(task)"
+                  class="text-xs text-red-600 hover:text-red-800"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+@if (showModal) {
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+      <h2 class="text-xl font-bold mb-4">
+        {{ editingTask ? 'Edit Task' : 'Create Task' }}
+      </h2>
+      
+      <form (ngSubmit)="saveTask()" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+          <input
+            type="text"
+            [(ngModel)]="modalTitle"
+            name="title"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            [(ngModel)]="modalDescription"
+            name="description"
+            rows="3"
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <select
+            [(ngModel)]="modalCategory"
+            name="category"
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            @for (cat of categories; track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select
+            [(ngModel)]="modalStatus"
+            name="status"
+            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            @for (status of statuses; track status) {
+              <option [value]="status">{{ getStatusLabel(status) }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="flex gap-2 justify-end">
+          <button
+            type="button"
+            (click)="closeModal()"
+            class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          >
+            {{ editingTask ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
