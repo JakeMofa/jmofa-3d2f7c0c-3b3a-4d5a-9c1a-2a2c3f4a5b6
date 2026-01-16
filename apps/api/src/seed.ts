@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Organization } from './app/entities/organization.entity.js';
-import { User, UserRole } from './app/entities/user.entity.js';
+import { Organization } from './app/entities/organization.entity';
+import { User, UserRole } from './app/entities/user.entity';
 
 async function seed() {
   const dataSource = new DataSource({
